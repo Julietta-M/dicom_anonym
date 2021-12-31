@@ -1,21 +1,21 @@
-import { DataSet, parseDicom } from 'dicom-parser';
-import { dataDictionary } from './dataDictionary';
-import { listAnonymizedTags } from './listAnonymizedTags';
+import { DataSet, parseDicom } from "dicom-parser";
+import { dataDictionary } from "./dataDictionary";
+import { listAnonymizedTags } from "./listAnonymizedTags";
 
 const charSet8: Uint8Array = new Uint8Array(
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 '
-    .split('')
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 "
+    .split("")
     .map((char) => char.charCodeAt(0))
 );
 
 const charUpperSet8: Uint8Array = new Uint8Array(
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '
-    .split('')
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
+    .split("")
     .map((char) => char.charCodeAt(0))
 );
 
 const charNumberSet8: Uint8Array = new Uint8Array(
-  '0123456789'.split('').map((char) => char.charCodeAt(0))
+  "0123456789".split("").map((char) => char.charCodeAt(0))
 );
 
 export default class DicomAnonymizer {
@@ -25,24 +25,24 @@ export default class DicomAnonymizer {
   }
 
   anonymize = (): Uint8Array => {
-    let vrs = new Set<string>();
-    for (const item in listAnonymizedTags) {
-      if (item in dataDictionary) {
-        const element = dataDictionary[item];
-        if (!(element.vr in handler)) {
-          if (element.vr === 'OB') {
-            console.log('OB');
-          }
-          vrs.add(element.vr);
-        }
-      }
-    }
+    // let vrs = new Set<string>();
+    // for (const item in listAnonymizedTags) {
+    //   if (item in dataDictionary) {
+    //     const element = dataDictionary[item];
+    //     if (!(element.vr in handler)) {
+    //       if (element.vr === 'OB') {
+    //         console.log('OB');
+    //       }
+    //       vrs.add(element.vr);
+    //     }
+    //   }
+    // }
     const dicom: DataSet = parseDicom(this.originBuffer);
     for (const element in dicom.elements) {
       const { tag, vr, length, dataOffset } = dicom.elements[element];
       const description = dataDictionary[tag];
-      let name = '???';
-      let vm = '???';
+      let name = "???";
+      let vm = "???";
       if (description) {
         name = description.name;
         vm = description.vm;
@@ -75,10 +75,10 @@ const loadString8 = (
   length: number
 ): string => {
   if (length <= 0) {
-    return '';
+    return "";
   }
   const bytes = byteArr.slice(offset, offset + length);
-  let retVal: string = '';
+  let retVal: string = "";
   for (const c of bytes) {
     retVal += String.fromCharCode(c);
   }
@@ -141,7 +141,7 @@ const handler: {
     const value = loadString8(bytes, offset, length);
     for (let position = 0; position < length; position++) {
       const char: number = bytes[position + offset];
-      if (char === 0 || String.fromCharCode(char) === '.') continue;
+      if (char === 0 || String.fromCharCode(char) === ".") continue;
       bytes[offset + position] = getRandomNumberChar8();
     }
     console.log(value);
@@ -152,7 +152,7 @@ const handler: {
     const dateStr = `${d.getFullYear()}${d
       .getMonth()
       .toString()
-      .padStart(2, '0')}${d.getDate().toString().padStart(2, '0')}`;
+      .padStart(2, "0")}${d.getDate().toString().padStart(2, "0")}`;
     const bytes = dicom.byteArray;
     const size = Math.min(length, dateStr.length);
     for (let i = 0; i < size; i++) {
@@ -163,13 +163,13 @@ const handler: {
   TM: (dicom: DataSet, offset: number, length: number = 0) => {
     const value = loadString8(dicom.byteArray, offset, length);
     const d = randomDate();
-    const timeStr = `${d.getHours().toString().padStart(2, '0')}${d
+    const timeStr = `${d.getHours().toString().padStart(2, "0")}${d
       .getMinutes()
       .toString()
-      .padStart(2, '0')}${d.getSeconds().toString().padStart(2, '0')}.${d
+      .padStart(2, "0")}${d.getSeconds().toString().padStart(2, "0")}.${d
       .getMilliseconds()
       .toString()
-      .padStart(6, '0')}`;
+      .padStart(6, "0")}`;
     const bytes = dicom.byteArray;
     const size = Math.min(length, timeStr.length);
     for (let i = 0; i < size; i++) {
@@ -195,13 +195,35 @@ const handler: {
     // TODO: need implement
   },
   DT: (dicom: DataSet, offset: number, length: number = 0) => {
-    // TODO: need implement
+    const d = randomDate();
+    const dateStr = `${d.getFullYear()}${d
+      .getMonth()
+      .toString()
+      .padStart(2, "0")}${d.getDate().toString().padStart(2, "0")}${d
+      .getHours()
+      .toString()
+      .padStart(2, "0")}${d.getMinutes().toString().padStart(2, "0")}${d
+      .getSeconds()
+      .toString()
+      .padStart(2, "0")}.${d.getMilliseconds().toString().padStart(6, "0")}
+      &${d.getHours().toString().padStart(2, "0")}${d
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}
+      `;
+    const bytes = dicom.byteArray;
+    const size = Math.min(length, dateStr.length);
+    for (let i = 0; i < size; i++) {
+      bytes[offset + i] = dateStr.charCodeAt(i);
+    }
   },
   SQ: (dicom: DataSet, offset: number, length: number = 0) => {
     // TODO: need implement
   },
   LT: (dicom: DataSet, offset: number, length: number = 0) => {
-    // TODO: need implement
+    for (let position = 0; position < length; position++) {
+      dicom.byteArray[offset + position] = getRandomChar8();
+    }
   },
   AS: (dicom: DataSet, offset: number, length: number = 0) => {
     // TODO: need implement
